@@ -3,17 +3,15 @@ import http from "http";
 import socket from "socket.io";
 import prompts from "prompts";
 
+const replaceAll = (message: string, search: string, replace: string)=> {
+    return message.replace(new RegExp(search, 'g'), replace)
+}
 
 
 class Server {
+    private socket: any;
     constructor() {
         const app = express()
-
-        app.get('/', (req, res) => {
-            res.json({
-                hello: "hello hello hello robert kiyosaki here."
-            })
-        })
 
         const server = new http.Server(app)
 
@@ -22,10 +20,13 @@ class Server {
 
         io.on('connection', (socket: any)=>{
             console.log("user connected.")
+            this.socket = socket
             this.listenCommands()
 
             socket.on("command", (data: any)=>{
-                console.log(data)
+                const output = JSON.parse(data)
+
+                console.log("\n " + replaceAll(output, "\n", "\n "))
             })
         })
 
@@ -38,7 +39,7 @@ class Server {
            if (value === "quit"){
                break
            }else {
-               console.log(value)
+               this.sendMessage(value)
            }
         }
     }
@@ -52,6 +53,23 @@ class Server {
         })
 
         return response
+    }
+
+    sendMessage(message: any){
+        this.socket.emit("command", JSON.stringify(message))
+    }
+
+    log(message: string){
+        function customString(object: any) {
+            let string = '{\n';
+            Object.keys(object).forEach(key => {
+                string += '  "' + key + '": "' + object[key] + '"\n';
+            });
+            string += '}';
+            return string;
+        }
+
+        console.log(customString({value: message}))
     }
 }
 

@@ -12,6 +12,7 @@
     "@types/express": "^4.17.11",
     "@types/node": "^14.14.31",
     "@types/prompts": "^2.0.9",
+    "@types/sprintf-js": "^1.1.2",
     "nodemon": "^2.0.7",
     "prettier": "^2.2.1",
     "ts-node": "^9.1.1",
@@ -21,6 +22,7 @@
     "express": "^4.17.1",
     "prompts": "^2.4.0",
     "socket.io": "^3.1.2",
-    "socket.io-client": "^3.1.2"
+    "socket.io-client": "^3.1.2",
+    "sprintf-js": "^1.1.2"
   }
 }
