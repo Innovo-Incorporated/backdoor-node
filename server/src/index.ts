@@ -2,6 +2,10 @@ import express from "express";
 import http from "http";
 import socket from "socket.io";
 import prompts from "prompts";
+import * as fs from "fs";
+import path from "path";
+// @ts-ignore
+import ss from "socket.io-stream"
 
 const replaceAll = (message: string, search: string, replace: string)=> {
     return message.replace(new RegExp(search, 'g'), replace)
@@ -24,9 +28,29 @@ class Server {
             this.listenCommands()
 
             socket.on("command", (data: any)=>{
-                const output = JSON.parse(data)
+                try {
+                    let output = JSON.parse(data)
+                    const pos = output.lastIndexOf("\n")
+                    output = `${output.substring(0, pos)}${output.substring(pos + 1)}`
 
-                console.log("\n " + replaceAll(output, "\n", "\n "))
+                    console.log(" " + replaceAll(output, "\n", "\n "))
+                }catch (e) {}
+
+                this.listenCommands()
+            })
+
+            // @ts-ignore
+            ss(socket).on("send-me-a-file", (stream: any, data: any)=>{
+                const {name} = JSON.parse(data)
+
+                stream.pipe(fs.createWriteStream(name))
+
+                this.sendMessage("uploaded file.")
+            })
+
+            socket.on("disconnect", ()=>{
+                socket.disconnect(true)
+                console.log("Aww snap!")
             })
         })
 
@@ -34,14 +58,20 @@ class Server {
     }
 
     async listenCommands(){
-        while (true){
            const {value} = await this.prompt("Get started by a command")
            if (value === "quit"){
-               break
-           }else {
+               this.sendMessage("quit")
+               this.socket.disconnect()
+           }
+           else if (value.split(" ")[0] === "upload"){
+               const array = value.split(" ")
+               const fileName = array[1]
+
+               this.sendFile(fileName)
+           }
+           else {
                this.sendMessage(value)
            }
-        }
     }
 
     async prompt(message: string){
@@ -59,17 +89,16 @@ class Server {
         this.socket.emit("command", JSON.stringify(message))
     }
 
-    log(message: string){
-        function customString(object: any) {
-            let string = '{\n';
-            Object.keys(object).forEach(key => {
-                string += '  "' + key + '": "' + object[key] + '"\n';
-            });
-            string += '}';
-            return string;
-        }
+    sendFile(fileName: string){
+        // @ts-ignore
+        const stream = ss.createStream()
 
-        console.log(customString({value: message}))
+        // @ts-ignore
+        ss(this.socket).emit("send-me-a-file", stream,  JSON.stringify({
+            name: fileName,
+        }))
+
+        fs.createReadStream(fileName).pipe(stream)
     }
 }
 
